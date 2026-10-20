@@ -1,8 +1,11 @@
 <!DOCTYPE html>
-<html lang="es" class="dark">
+<html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#020617" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Simulador Oficial MUE 12-D · Medicina de Urgencias y Emergencias</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -14,10 +17,12 @@
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <style>
-    body {
+    html, body {
       font-family: 'Inter', system-ui, -apple-system, sans-serif;
       background-color: #020617;
       color: #f1f5f9;
+      overflow-x: hidden;
+      -webkit-tap-highlight-color: transparent;
     }
     .font-mono {
       font-family: 'JetBrains Mono', monospace;
@@ -29,96 +34,121 @@
     .animate-fadeIn {
       animation: fadeIn 0.25s ease-out forwards;
     }
-    /* Estilos exclusivos para cuando el usuario exporta/imprime directamente */
-    @media print {
-      body * {
-        visibility: hidden;
-      }
-      #printableStudyGuide, #printableStudyGuide * {
-        visibility: visible;
-      }
-      #printableStudyGuide {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        background: #ffffff !important;
-        color: #0f172a !important;
-        padding: 0 !important;
-      }
+    /* Safe area padding para móviles iOS / Android en Vercel */
+    .pb-safe {
+      padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+    }
+    .bottom-nav-safe {
+      padding-bottom: calc(0.65rem + env(safe-area-inset-bottom, 0px));
+    }
+    /* Ocultar barra de scroll en pestañas horizontales móviles */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
     }
   </style>
 </head>
-<body class="min-h-screen bg-slate-950 text-slate-100 pb-16 selection:bg-teal-500 selection:text-slate-950">
+<body class="min-h-screen bg-slate-950 text-slate-100 pb-safe lg:pb-16 selection:bg-teal-500 selection:text-slate-950">
 
   <header class="bg-gradient-to-r from-slate-900 via-teal-950 to-slate-900 border-b border-teal-500/30 sticky top-0 z-30 backdrop-blur-md">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
-      <!-- Identidad del Simulador -->
-      <div class="flex items-center gap-3">
-        <div class="w-11 h-11 rounded-xl bg-teal-500/20 border border-teal-400/40 flex items-center justify-center text-teal-300 shadow-lg shadow-teal-950/50">
-          <i data-lucide="stethoscope" class="w-6 h-6"></i>
-        </div>
-        <div>
-          <div class="flex items-center gap-2 flex-wrap">
-            <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">
-              Simulador MUE 12-D
-            </h1>
-            <span class="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30 font-semibold">
-              Vía Extraordinaria · 12 Dic 2026
-            </span>
+    <div class="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 sm:py-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <!-- Fila 1 en móvil: Identidad + Temporizador + Botón Info -->
+      <div class="flex items-center justify-between gap-2 w-full sm:w-auto">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-teal-500/20 border border-teal-400/40 flex items-center justify-center text-teal-300 shadow-lg shadow-teal-950/50 shrink-0">
+            <i data-lucide="stethoscope" class="w-5 h-5 sm:w-6 sm:h-6"></i>
           </div>
-          <p id="headerSubtitle" class="text-xs text-slate-400 hidden sm:block">
-            Basado en <span class="text-slate-200 font-medium">Montero Pérez &amp; Jiménez Murillo</span> · 3 Casos Clínicos (45 preguntas)
-          </p>
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <h1 class="text-sm sm:text-lg font-bold tracking-tight text-white truncate">
+                Simulador MUE 12-D
+              </h1>
+              <span class="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-400/30 font-semibold whitespace-nowrap">
+                12 Dic 2026
+              </span>
+            </div>
+            <p id="headerSubtitle" class="text-[11px] sm:text-xs text-slate-400 hidden md:block truncate">
+              Basado en <span class="text-slate-200 font-medium">Montero Pérez &amp; Jiménez Murillo</span> · 3 Casos Clínicos (45 preguntas)
+            </p>
+          </div>
+        </div>
+
+        <!-- Temporizador e Info visibles a la derecha en móvil -->
+        <div class="flex items-center gap-1.5 sm:hidden shrink-0">
+          <div
+            id="timerContainerMobile"
+            class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border font-mono text-xs font-bold bg-slate-900/60 border-slate-800 text-slate-400"
+          >
+            <i data-lucide="clock" class="w-3.5 h-3.5"></i>
+            <span id="timerDisplayMobile">90:00</span>
+          </div>
+          <button
+            type="button"
+            onclick="toggleExamInfoModal(true)"
+            class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 transition"
+            title="Información oficial del examen 12-D"
+            aria-label="Información oficial del examen"
+          >
+            <i data-lucide="calendar" class="w-4 h-4 text-teal-400"></i>
+          </button>
         </div>
       </div>
 
-      <!-- Controles superiores: 1 vs 3 casos, Modo, Reloj e Info -->
-      <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+      <!-- Fila 2 en móvil / Controles superiores en escritorio -->
+      <div class="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2.5 w-full sm:w-auto overflow-x-auto no-scrollbar">
         <!-- Selector 1 Caso (15 preg) vs 3 Casos (45 preg) -->
-        <div class="bg-slate-900/90 p-1 rounded-xl border border-slate-700/80 flex items-center text-xs">
+        <div class="bg-slate-900/90 p-0.5 sm:p-1 rounded-xl border border-slate-700/80 flex items-center text-[11px] sm:text-xs shrink-0">
           <button
+            type="button"
             id="btnFormat1"
             onclick="setNumCasesToGenerate(1)"
-            class="px-2.5 py-1.5 rounded-lg font-semibold transition-all text-slate-400 hover:text-slate-200"
+            class="px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg font-semibold transition-all text-slate-400 hover:text-slate-200 whitespace-nowrap"
             title="Generar un único caso clínico de 15 preguntas (30 minutos)"
           >
-            1 Caso (15 preg.)
+            15 preg.
           </button>
           <button
+            type="button"
             id="btnFormat3"
             onclick="setNumCasesToGenerate(3)"
-            class="px-2.5 py-1.5 rounded-lg font-semibold transition-all bg-amber-500 text-slate-950 shadow"
+            class="px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg font-semibold transition-all bg-amber-500 text-slate-950 shadow whitespace-nowrap"
             title="Formato oficial completo de 3 casos clínicos y 45 preguntas (90 minutos)"
           >
-            3 Casos (45 preg.)
+            45 preg.
           </button>
         </div>
 
         <!-- Selector Modo Entrenamiento vs Examen Real -->
-        <div class="bg-slate-900/90 p-1 rounded-xl border border-slate-700/80 flex items-center text-xs">
+        <div class="bg-slate-900/90 p-0.5 sm:p-1 rounded-xl border border-slate-700/80 flex items-center text-[11px] sm:text-xs shrink-0">
           <button
+            type="button"
             id="btnModeAprendizaje"
             onclick="setExamMode('aprendizaje')"
-            class="px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1.5 bg-teal-600 text-white shadow"
+            class="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg font-medium transition-all flex items-center gap-1 bg-teal-600 text-white shadow whitespace-nowrap"
           >
-            <i data-lucide="lightbulb" class="w-3.5 h-3.5"></i>
-            <span>Modo Entrenamiento (Feedback + Truco)</span>
+            <i data-lucide="lightbulb" class="w-3.5 h-3.5 shrink-0"></i>
+            <span class="sm:hidden">Entreno</span>
+            <span class="hidden sm:inline">Modo Entrenamiento (Feedback + Truco)</span>
           </button>
           <button
+            type="button"
             id="btnModeSimulacro"
             onclick="setExamMode('simulacro')"
-            class="px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1.5 text-slate-400 hover:text-slate-200"
+            class="px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg font-medium transition-all flex items-center gap-1 text-slate-400 hover:text-slate-200 whitespace-nowrap"
           >
-            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
-            <span>Modo Examen Real</span>
+            <i data-lucide="shield-check" class="w-3.5 h-3.5 shrink-0"></i>
+            <span class="sm:hidden">Simulacro</span>
+            <span class="hidden sm:inline">Modo Examen Real</span>
           </button>
         </div>
 
-        <!-- Temporizador Oficial -->
+        <!-- Temporizador Oficial (Escritorio/Tablet) -->
         <div
           id="timerContainer"
-          class="flex items-center gap-2 px-3 py-1.5 rounded-xl border font-mono text-sm font-bold bg-slate-900/60 border-slate-800 text-slate-500"
+          class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border font-mono text-sm font-bold bg-slate-900/60 border-slate-800 text-slate-500 shrink-0"
           title="El tiempo no correrá hasta que generes un caso clínico"
         >
           <i data-lucide="clock" class="w-4 h-4"></i>
@@ -126,10 +156,11 @@
           <span id="timerPausedBadge" class="text-[10px] font-sans font-normal text-slate-400 ml-1">(En pausa)</span>
         </div>
 
-        <!-- Botón Modal Info Convocatoria 12-D -->
+        <!-- Botón Modal Info Convocatoria 12-D (Escritorio/Tablet) -->
         <button
+          type="button"
           onclick="toggleExamInfoModal(true)"
-          class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 text-xs font-medium flex items-center gap-1.5 transition"
+          class="hidden sm:flex px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 text-xs font-medium items-center gap-1.5 transition shrink-0"
           title="Ver convocatoria oficial 12 de diciembre"
         >
           <i data-lucide="calendar" class="w-3.5 h-3.5 text-teal-400"></i>
@@ -139,63 +170,67 @@
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto px-4 pt-5 space-y-6">
+  <main class="max-w-7xl mx-auto px-3 sm:px-4 pt-3 sm:pt-5 space-y-4 sm:space-y-6">
     <!-- Barra de Acción Superior y Generador IA -->
-    <section class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl">
-      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div class="flex items-start sm:items-center gap-3 flex-wrap">
+    <section class="bg-slate-900/90 border border-slate-800 rounded-2xl p-3 sm:p-4 shadow-xl">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4">
+        <div class="grid grid-cols-1 sm:flex sm:items-center gap-2 sm:gap-3 w-full lg:w-auto">
           <button
+            type="button"
             id="btnStartRandomTop"
             onclick="startNewRandomExam()"
-            class="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-semibold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-teal-950/50 transition"
+            class="w-full sm:w-auto justify-center px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 active:scale-[0.99] text-white font-semibold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-teal-950/50 transition"
           >
-            <i data-lucide="play" class="w-4 h-4"></i>
+            <i data-lucide="play" class="w-4 h-4 shrink-0"></i>
             <span id="btnStartRandomTopText">Generar Examen del PDF (3 Casos · 45 preg.)</span>
           </button>
 
           <button
+            type="button"
             id="btnFinishExamTop"
             onclick="finishExam()"
-            class="hidden px-4 py-2.5 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 text-amber-300 border border-amber-500/40 font-semibold text-xs sm:text-sm flex items-center gap-2 transition"
+            class="hidden w-full sm:w-auto justify-center px-4 py-2.5 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 active:scale-[0.99] text-amber-300 border border-amber-500/40 font-semibold text-xs sm:text-sm flex items-center gap-2 transition"
           >
-            <i data-lucide="award" class="w-4 h-4"></i>
+            <i data-lucide="award" class="w-4 h-4 shrink-0"></i>
             <span id="btnFinishExamTopText">Corregir Examen (0/45)</span>
           </button>
 
           <button
+            type="button"
             id="btnExportPDFTop"
             onclick="exportExamToPDF()"
-            class="hidden px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/50 transition"
+            class="hidden w-full sm:w-auto justify-center px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/50 transition"
           >
-            <i data-lucide="download" class="w-4 h-4"></i>
-            <span>Exportar Examen Corregido a PDF (Para Estudiar)</span>
+            <i data-lucide="download" class="w-4 h-4 shrink-0"></i>
+            <span>Exportar Examen Corregido a PDF</span>
           </button>
         </div>
 
         <!-- Generador IA por secciones del PDF -->
-        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-slate-950/80 p-2 rounded-xl border border-indigo-500/30">
-          <div class="flex items-center gap-1.5 px-2 text-xs font-semibold text-indigo-300">
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-slate-950/80 p-2.5 sm:p-2 rounded-xl border border-indigo-500/30 w-full lg:w-auto">
+          <div class="flex items-center gap-1.5 px-1 sm:px-2 text-xs font-semibold text-indigo-300">
             <i data-lucide="sparkles" class="w-4 h-4 text-indigo-400 shrink-0"></i>
             <span>Generador IA del PDF:</span>
           </div>
           <select
             id="aiTopicSelect"
-            class="bg-slate-900 text-slate-200 text-xs rounded-lg px-2.5 py-2 border border-slate-700 focus:outline-none focus:border-indigo-500"
+            class="w-full sm:w-auto sm:max-w-xs bg-slate-900 text-slate-200 text-xs rounded-lg px-2.5 py-2.5 sm:py-2 border border-slate-700 focus:outline-none focus:border-indigo-500"
           >
             <option value="Aleatorio de todo el libro (Sin pistas)">Aleatorio de todo el PDF (Sin pistas)</option>
-            <option value="Sección I-III: Soporte Vital, ECG, Imagen y Urgencias Cardiovasculares">Sección I-III: Soporte Vital, ECG, Imagen y Urgencias Cardiovasculares</option>
-            <option value="Sección IV-V: Urgencias Respiratorias y del Aparato Digestivo">Sección IV-V: Urgencias Respiratorias y del Aparato Digestivo</option>
-            <option value="Sección VI-VIII: Urgencias Neurológicas, Endocrinometabólicas y Equilibrio Ácido-Base">Sección VI-VIII: Urgencias Neurológicas, Endocrinometabólicas y Equilibrio Ácido-Base</option>
-            <option value="Sección IX-X: Urgencias Nefrourológicas e Infecciones / Sepsis en Urgencias">Sección IX-X: Urgencias Nefrourológicas e Infecciones / Sepsis en Urgencias</option>
-            <option value="Sección XI-XVI: Reumatología, Oncología, Hematología, Toxicología y Agentes Físicos">Sección XI-XVI: Reumatología, Oncología, Hematología, Toxicología y Agentes Físicos</option>
-            <option value="Sección XVII-XXIV: ORL, Oftalmología, Politrauma, Pediatría, Obstetricia y VMNI/Ecografía FAST">Sección XVII-XXIV: ORL, Oftalmología, Politrauma, Pediatría, Obstetricia y VMNI/Ecografía FAST</option>
+            <option value="Sección I-III: Soporte Vital, ECG, Imagen y Urgencias Cardiovasculares">Sección I-III: Soporte Vital, ECG y Cardiovasculares</option>
+            <option value="Sección IV-V: Urgencias Respiratorias y del Aparato Digestivo">Sección IV-V: Respiratorias y Digestivas</option>
+            <option value="Sección VI-VIII: Urgencias Neurológicas, Endocrinometabólicas y Equilibrio Ácido-Base">Sección VI-VIII: Neurología, Endocrino y Ácido-Base</option>
+            <option value="Sección IX-X: Urgencias Nefrourológicas e Infecciones / Sepsis en Urgencias">Sección IX-X: Nefrourología e Infecciones / Sepsis</option>
+            <option value="Sección XI-XVI: Reumatología, Oncología, Hematología, Toxicología y Agentes Físicos">Sección XI-XVI: Reuma, Onco, Hemato y Toxicología</option>
+            <option value="Sección XVII-XXIV: ORL, Oftalmología, Politrauma, Pediatría, Obstetricia y VMNI/Ecografía FAST">Sección XVII-XXIV: Politrauma, Pediatría, Obstetricia y Eco</option>
           </select>
           <button
+            type="button"
             id="btnGenerateAITop"
             onclick="generateNewAICase()"
-            class="px-3.5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition shrink-0"
+            class="w-full sm:w-auto px-3.5 py-2.5 sm:py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] disabled:opacity-50 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition shrink-0"
           >
-            <i data-lucide="brain-circuit" class="w-3.5 h-3.5"></i>
+            <i data-lucide="brain-circuit" class="w-3.5 h-3.5 shrink-0"></i>
             <span id="btnGenerateAITopText">Generar con IA (45 preg.)</span>
           </button>
         </div>
@@ -207,47 +242,49 @@
           <i data-lucide="info" class="w-4 h-4 text-amber-400 shrink-0"></i>
           <span id="aiMessageText"></span>
         </div>
-        <button onclick="document.getElementById('aiMessageBanner').classList.add('hidden')" class="text-amber-300 hover:text-white font-bold px-2">✕</button>
+        <button type="button" onclick="document.getElementById('aiMessageBanner').classList.add('hidden')" class="text-amber-300 hover:text-white font-bold px-2">✕</button>
       </div>
     </section>
 
-    <section id="welcomeScreen" class="bg-slate-900/70 border-2 border-dashed border-slate-800 rounded-3xl p-8 sm:p-12 text-center max-w-3xl mx-auto my-8 space-y-6">
-      <div class="w-16 h-16 rounded-2xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 mx-auto">
-        <i data-lucide="stethoscope" class="w-8 h-8"></i>
+    <section id="welcomeScreen" class="bg-slate-900/70 border-2 border-dashed border-slate-800 rounded-2xl sm:rounded-3xl p-5 sm:p-10 text-center max-w-3xl mx-auto my-4 sm:my-8 space-y-5 sm:space-y-6">
+      <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400 mx-auto">
+        <i data-lucide="stethoscope" class="w-7 h-7 sm:w-8 sm:h-8"></i>
       </div>
 
       <div class="space-y-2">
-        <span id="welcomeTimeBadge" class="text-xs font-bold uppercase tracking-widest text-teal-400">
+        <span id="welcomeTimeBadge" class="inline-block text-[11px] sm:text-xs font-bold uppercase tracking-widest text-teal-400">
           Listo para comenzar · Tiempo detenido (90:00)
         </span>
-        <h2 class="text-xl sm:text-2xl font-bold text-white">
+        <h2 class="text-lg sm:text-2xl font-bold text-white leading-snug">
           Elige el formato y genera tu examen cuando estés preparado
         </h2>
         <p class="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto leading-relaxed">
-          Puedes realizar un entrenamiento rápido de <strong>1 Caso Clínico (15 preguntas)</strong> o el simulacro completo de <strong>3 Casos Clínicos (45 preguntas)</strong>. Al corregir el examen podrás <strong>exportarlo a PDF</strong> con todas las respuestas razonadas y los trucos mnemotécnicos para estudiar.
+          Puedes realizar un entrenamiento rápido de <strong>1 Caso Clínico (15 preguntas)</strong> o el simulacro completo de <strong>3 Casos Clínicos (45 preguntas)</strong>. Al corregir el examen podrás <strong>exportarlo a PDF</strong> con todas las respuestas razonadas y los trucos mnemotécnicos para estudiar en tu móvil, tablet u ordenador.
         </p>
       </div>
 
       <!-- Tarjetas selectoras de 1 Caso (15 preguntas) vs 3 Casos (45 preguntas) -->
-      <div class="flex flex-col sm:flex-row items-center justify-center gap-3 max-w-xl mx-auto">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl mx-auto">
         <button
+          type="button"
           id="cardFormat1"
           onclick="setNumCasesToGenerate(1)"
-          class="w-full sm:w-1/2 p-4 rounded-2xl border text-left transition-all bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700"
+          class="w-full p-4 rounded-2xl border text-left transition-all bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700"
         >
           <div class="flex items-center justify-between">
             <span class="font-bold text-sm text-amber-300">1 Caso Clínico (15 preg.)</span>
             <span id="checkFormat1" class="hidden text-amber-400 font-bold">✓</span>
           </div>
           <p class="text-xs text-slate-400 mt-1">
-            30 minutos · Ideal para estudio rápido y exportar cuaderno PDF por caso.
+            30 minutos · Ideal para estudio rápido en el móvil y exportar cuaderno PDF por caso.
           </p>
         </button>
 
         <button
+          type="button"
           id="cardFormat3"
           onclick="setNumCasesToGenerate(3)"
-          class="w-full sm:w-1/2 p-4 rounded-2xl border text-left transition-all bg-teal-500/15 border-teal-400 text-white shadow-lg"
+          class="w-full p-4 rounded-2xl border text-left transition-all bg-teal-500/15 border-teal-400 text-white shadow-lg"
         >
           <div class="flex items-center justify-between">
             <span class="font-bold text-sm text-teal-300">3 Casos Clínicos (45 preg.)</span>
@@ -260,26 +297,28 @@
       </div>
 
       <!-- Botones principales de acción en la pantalla de bienvenida -->
-      <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 pt-1">
         <button
+          type="button"
           onclick="startNewRandomExam()"
-          class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-teal-950/60 transition"
+          class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-teal-600 hover:bg-teal-500 active:scale-[0.99] text-white font-bold text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-teal-950/60 transition"
         >
-          <i data-lucide="play" class="w-4 h-4"></i>
+          <i data-lucide="play" class="w-4 h-4 shrink-0"></i>
           <span id="btnWelcomeStartPDF">Generar Examen del PDF (45 preg.)</span>
         </button>
 
         <button
+          type="button"
           id="btnWelcomeStartAI"
           onclick="generateNewAICase()"
-          class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-indigo-950/60 transition"
+          class="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] text-white font-bold text-sm flex items-center justify-center gap-2.5 shadow-lg shadow-indigo-950/60 transition"
         >
-          <i data-lucide="sparkles" class="w-4 h-4"></i>
+          <i data-lucide="sparkles" class="w-4 h-4 shrink-0"></i>
           <span id="btnWelcomeStartAIText">Generar Caso Nuevo con IA (45 preg.)</span>
         </button>
       </div>
 
-      <div class="pt-4 border-t border-slate-800/80 grid grid-cols-1 sm:grid-cols-3 gap-3 text-left text-xs text-slate-400">
+      <div class="pt-4 border-t border-slate-800/80 grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 text-left text-xs text-slate-400">
         <div class="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80">
           <div class="font-bold text-slate-200 mb-0.5">🔒 Sin Pistas en Títulos</div>
           Cada caso se titula estrictamente "Caso Clínico X" como en el cuadernillo oficial del 12-D.
@@ -289,41 +328,42 @@
           Al corregir tu examen de 15 o 45 preguntas puedes descargarlo en PDF con explicaciones y trucos.
         </div>
         <div class="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80">
-          <div class="font-bold text-slate-200 mb-0.5">⚡ Truco Mnemotécnico</div>
-          Explicación razonada del libro + regla "Esto + Esto = Esto" al responder o corregir.
+          <div class="font-bold text-slate-200 mb-0.5">📱 Adaptado a Móvil</div>
+          Desliza entre preguntas o usa la barra táctil inferior y el mapa desplegable.
         </div>
       </div>
     </section>
 
-    <div id="examWorkspace" class="hidden space-y-6">
+    <div id="examWorkspace" class="hidden space-y-4 sm:space-y-6">
       <!-- Panel de Acta de Resultados (Visible cuando se corrige el examen) -->
-      <section id="resultsDashboard" class="hidden bg-gradient-to-br from-slate-900 via-slate-900 to-teal-950/40 border-2 border-teal-500/40 rounded-2xl p-6 shadow-2xl space-y-6 animate-fadeIn">
+      <section id="resultsDashboard" class="hidden bg-gradient-to-br from-slate-900 via-slate-900 to-teal-950/40 border-2 border-teal-500/40 rounded-2xl p-4 sm:p-6 shadow-2xl space-y-5 animate-fadeIn">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
           <div>
-            <span class="text-xs font-bold uppercase tracking-wider text-teal-400">
+            <span class="text-[11px] sm:text-xs font-bold uppercase tracking-wider text-teal-400">
               Acta de Evaluación · Criterios Oficiales Ministerio de Sanidad (12-D)
             </span>
-            <h2 class="text-2xl font-bold text-white mt-1 flex items-center gap-3 flex-wrap">
+            <h2 class="text-xl sm:text-2xl font-bold text-white mt-1 flex items-center gap-2.5 flex-wrap">
               <span>Resultado Global:</span>
               <span id="globalAptoBadge"></span>
             </h2>
           </div>
 
-          <div class="flex flex-wrap items-center gap-4">
+          <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
             <button
+              type="button"
               onclick="exportExamToPDF()"
-              class="px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/60 transition"
+              class="w-full sm:w-auto justify-center px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-[0.99] text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/60 transition"
             >
-              <i data-lucide="printer" class="w-4 h-4"></i>
+              <i data-lucide="printer" class="w-4 h-4 shrink-0"></i>
               <span>Exportar Examen Corregido a PDF</span>
             </button>
 
-            <div class="flex items-center gap-4 bg-slate-950/80 px-5 py-3 rounded-2xl border border-slate-800">
+            <div class="flex items-center justify-around sm:justify-start gap-4 bg-slate-950/80 px-4 py-3 rounded-2xl border border-slate-800">
               <div class="text-center">
                 <div class="text-xs text-slate-400">Puntuación Total</div>
-                <div class="text-2xl font-black text-white">
+                <div class="text-xl sm:text-2xl font-black text-white">
                   <span id="resFinalScore">0</span>
-                  <span id="resMaxScore" class="text-sm font-normal text-slate-400">/ 45 ptos</span>
+                  <span id="resMaxScore" class="text-xs sm:text-sm font-normal text-slate-400">/ 45 ptos</span>
                 </div>
                 <div id="resMinRequired" class="text-[11px] text-teal-400">Mínimo exigido: 20.00 ptos</div>
               </div>
@@ -338,114 +378,126 @@
         </div>
 
         <!-- Desglose por cada Caso Clínico -->
-        <div id="casesBreakdownGrid" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+        <div id="casesBreakdownGrid" class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4"></div>
 
         <!-- Aviso si no es Apto -->
-        <div id="noAptoWarning" class="hidden p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-200 text-xs flex items-center gap-2.5">
-          <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-400 shrink-0"></i>
+        <div id="noAptoWarning" class="hidden p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-200 text-xs flex items-start sm:items-center gap-2.5">
+          <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-400 shrink-0 mt-0.5 sm:mt-0"></i>
           <div id="noAptoWarningText"></div>
         </div>
       </section>
 
       <!-- Pestañas de selección de Caso Clínico (Título neutro "Caso Clínico X") -->
-      <div id="caseTabsContainer" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
+      <div id="caseTabsContainer" class="grid grid-cols-3 gap-2 sm:gap-3"></div>
 
       <!-- Zona de trabajo en 2 columnas: Viñeta + Pregunta Activa (Izquierda) y Mapa de Preguntas (Derecha) -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
         <!-- Columna Izquierda (8 cols) -->
-        <div class="lg:col-span-8 space-y-5">
-          <!-- Exposición del Caso Clínico -->
-          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
-            <div class="flex items-center justify-between gap-2 mb-2">
-              <div class="flex items-center gap-2 text-teal-400 text-xs font-bold uppercase tracking-wider">
-                <i data-lucide="file-text" class="w-4 h-4"></i>
-                <span>Exposición del Caso</span>
+        <div class="lg:col-span-8 space-y-4 sm:space-y-5">
+          <!-- Exposición del Caso Clínico (Plegable en móvil para ahorrar espacio de lectura) -->
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-lg">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="text-teal-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+                  <i data-lucide="file-text" class="w-4 h-4"></i>
+                  <span id="activeCaseTitle">Caso Clínico 1</span>
+                </span>
+                <span class="text-[11px] text-slate-400 hidden sm:inline">· Exposición del Caso (15 preg.)</span>
               </div>
-              <span class="text-xs text-slate-400">15 preguntas asociadas</span>
+              <button
+                type="button"
+                onclick="toggleMobileVignette()"
+                class="text-xs font-semibold text-teal-300 hover:text-white bg-slate-800/90 px-2.5 py-1 rounded-lg border border-slate-700 flex items-center gap-1 transition"
+              >
+                <span id="btnToggleVignetteText">Ocultar enunciado</span>
+              </button>
             </div>
-            <h2 id="activeCaseTitle" class="text-base sm:text-lg font-bold text-white mb-2">
-              Caso Clínico 1
-            </h2>
-            <div id="activeCaseVignette" class="p-3.5 rounded-xl bg-slate-950/90 border border-slate-800/90 text-slate-300 text-xs sm:text-sm leading-relaxed"></div>
+            <div id="activeCaseVignetteWrapper" class="mt-3">
+              <div id="activeCaseVignette" class="p-3 sm:p-3.5 rounded-xl bg-slate-950/90 border border-slate-800/90 text-slate-200 text-xs sm:text-sm leading-relaxed"></div>
+            </div>
           </div>
 
-          <!-- Tarjeta de la Pregunta Activa -->
-          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5">
-            <div class="flex items-center justify-between gap-3 border-b border-slate-800 pb-3">
-              <div class="flex items-center gap-2.5">
-                <span id="activeQuestionBadge" class="px-3 py-1 rounded-lg bg-teal-500/20 border border-teal-400/40 text-teal-300 font-bold text-xs sm:text-sm">
-                  Caso Clínico 1 · Pregunta 1 de 15
+          <!-- Tarjeta de la Pregunta Activa (Soporta gesto Swipe izquierda/derecha en móvil) -->
+          <div id="questionCardTouchArea" class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl space-y-4 sm:space-y-5">
+            <div class="flex items-center justify-between gap-2 border-b border-slate-800 pb-3">
+              <div class="flex items-center gap-2 flex-wrap">
+                <span id="activeQuestionBadge" class="px-2.5 sm:px-3 py-1 rounded-lg bg-teal-500/20 border border-teal-400/40 text-teal-300 font-bold text-xs sm:text-sm">
+                  Caso 1 · Pregunta 1/15
                 </span>
-                <span id="activeQuestionGlobalCounter" class="text-xs text-slate-400 hidden sm:inline">
+                <span id="activeQuestionGlobalCounter" class="text-[11px] sm:text-xs text-slate-400">
                   (Global: 1/45)
                 </span>
               </div>
 
               <button
+                type="button"
                 id="btnFlagQuestion"
                 onclick="toggleFlagQuestion()"
-                class="px-2.5 py-1 rounded-lg text-xs font-medium flex items-center gap-1.5 border transition bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200"
+                class="px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 border transition bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200 shrink-0"
               >
                 <i data-lucide="flag" class="w-3.5 h-3.5"></i>
-                <span id="btnFlagQuestionText">Marcar duda</span>
+                <span id="btnFlagQuestionText">Duda</span>
               </button>
             </div>
 
             <!-- Enunciado de la pregunta -->
-            <h3 id="activeQuestionStem" class="text-base sm:text-lg font-semibold text-white leading-snug"></h3>
+            <h3 id="activeQuestionStem" class="text-sm sm:text-lg font-semibold text-white leading-snug"></h3>
 
             <!-- Lista de 4 Opciones -->
-            <div id="optionsListContainer" class="space-y-3"></div>
+            <div id="optionsListContainer" class="space-y-2.5 sm:space-y-3"></div>
 
             <!-- Caja de Feedback Razonado + Truco Mnemotécnico (ESTO + ESTO = ESTO) -->
-            <div id="feedbackContainer" class="hidden mt-6 space-y-4 pt-4 border-t border-slate-800 animate-fadeIn">
+            <div id="feedbackContainer" class="hidden mt-5 space-y-3.5 sm:space-y-4 pt-4 border-t border-slate-800 animate-fadeIn">
               <!-- Banner de estado (Correcta / Incorrecta / En Blanco) -->
-              <div id="feedbackStatusBanner" class="p-3.5 rounded-xl border flex items-center gap-3"></div>
+              <div id="feedbackStatusBanner" class="p-3 sm:p-3.5 rounded-xl border flex items-start sm:items-center gap-3"></div>
 
               <!-- Explicación Razonada del Manual -->
-              <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+              <div class="p-3.5 sm:p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5">
                 <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-teal-400">
-                  <i data-lucide="book-open" class="w-4 h-4"></i>
+                  <i data-lucide="book-open" class="w-4 h-4 shrink-0"></i>
                   <span>Explicación Razonada (Montero Pérez &amp; Jiménez Murillo)</span>
                 </div>
                 <p id="feedbackExplanationText" class="text-xs sm:text-sm text-slate-200 leading-relaxed"></p>
               </div>
 
               <!-- Truco Mnemotécnico formato Fórmula: ESTO + ESTO = ESTO -->
-              <div class="p-4 rounded-xl bg-gradient-to-r from-amber-950/60 via-amber-900/30 to-slate-900 border-2 border-amber-500/50 shadow-lg space-y-1.5">
+              <div class="p-3.5 sm:p-4 rounded-xl bg-gradient-to-r from-amber-950/60 via-amber-900/30 to-slate-900 border-2 border-amber-500/50 shadow-lg space-y-1.5">
                 <div class="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-amber-300">
-                  <i data-lucide="zap" class="w-4 h-4 text-amber-400"></i>
-                  <span>Truco Mnemotécnico para el 12-D (Fórmula "Esto + Esto = Esto")</span>
+                  <i data-lucide="zap" class="w-4 h-4 text-amber-400 shrink-0"></i>
+                  <span>Truco Mnemotécnico 12-D ("Esto + Esto = Esto")</span>
                 </div>
-                <p id="feedbackTrickText" class="text-sm sm:text-base font-bold text-white tracking-wide"></p>
+                <p id="feedbackTrickText" class="text-xs sm:text-base font-bold text-white tracking-wide leading-snug"></p>
               </div>
             </div>
 
             <!-- Botones Anterior / Dejar en blanco / Siguiente -->
-            <div class="flex items-center justify-between pt-4 border-t border-slate-800">
+            <div class="flex items-center justify-between pt-3 sm:pt-4 border-t border-slate-800 gap-2">
               <button
+                type="button"
                 id="btnPrevQuestion"
                 onclick="goToPrevQuestion()"
-                class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 text-xs sm:text-sm font-semibold flex items-center gap-2 transition"
+                class="px-3.5 sm:px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition"
               >
                 <i data-lucide="chevron-left" class="w-4 h-4"></i>
                 <span>Anterior</span>
               </button>
 
               <button
+                type="button"
                 id="btnClearAnswer"
                 onclick="clearCurrentAnswer()"
-                class="hidden text-xs text-slate-400 hover:text-rose-400 underline"
+                class="hidden text-xs text-slate-400 hover:text-rose-400 underline px-2 py-1"
               >
                 Dejar en blanco
               </button>
 
               <button
+                type="button"
                 id="btnNextQuestion"
                 onclick="goToNextQuestion()"
-                class="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 disabled:opacity-40 text-white text-xs sm:text-sm font-semibold flex items-center gap-2 shadow-lg transition"
+                class="px-4 sm:px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 disabled:opacity-40 text-white text-xs sm:text-sm font-semibold flex items-center gap-1.5 shadow-lg transition"
               >
-                <span>Siguiente Pregunta</span>
+                <span>Siguiente</span>
                 <i data-lucide="chevron-right" class="w-4 h-4"></i>
               </button>
             </div>
@@ -453,8 +505,8 @@
         </div>
 
         <!-- Columna Derecha (4 cols): Mapa del Examen y Reglas Oficiales -->
-        <div class="lg:col-span-4 space-y-5">
-          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+        <div id="questionMapSection" class="lg:col-span-4 space-y-5">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
             <div class="flex items-center justify-between">
               <h3 class="text-sm font-bold text-white flex items-center gap-2">
                 <i data-lucide="layers" class="w-4 h-4 text-teal-400"></i>
@@ -467,7 +519,7 @@
           </div>
 
           <!-- Tarjeta de Recordatorio de Reglas Oficiales 12-D -->
-          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-3">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl space-y-3">
             <div class="flex items-center gap-2 text-amber-400 text-xs font-bold uppercase tracking-wider">
               <i data-lucide="award" class="w-4 h-4"></i>
               <span>Requisitos Oficiales para Aprobar (12-D)</span>
@@ -488,7 +540,7 @@
               <li class="flex items-start gap-2">
                 <span class="text-teal-400 font-bold">•</span>
                 <span>
-                  <strong>Doble Llave para ser APTO:</strong> Obtener <strong>mínimo 5 puntos en CADA caso clínico</strong> (sacar ≤ 4 puntos en un caso elimina aunque tengas más de 20 en total) y alcanzar <strong>mínimo 20 puntos globales</strong> sobre 45.
+                  <strong>Doble Llave para ser APTO:</strong> Obtener <strong>mínimo 5 puntos en CADA caso clínico</strong> y alcanzar <strong>mínimo 20 puntos globales</strong> sobre 45.
                 </span>
               </li>
             </ul>
@@ -498,16 +550,103 @@
     </div>
   </main>
 
-  <div id="examInfoModal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-teal-500/40 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4">
+  <!-- Barra de navegación fija inferior exclusiva para Móviles (cuando el examen está activo) -->
+  <nav
+    id="mobileBottomNav"
+    class="hidden lg:hidden fixed bottom-0 inset-x-0 z-40 bg-slate-900/95 backdrop-blur-md border-t border-slate-800 px-3 pt-2 bottom-nav-safe shadow-2xl"
+  >
+    <div class="flex items-center justify-between gap-2 max-w-lg mx-auto">
+      <button
+        type="button"
+        id="btnMobilePrev"
+        onclick="goToPrevQuestion()"
+        class="px-3.5 py-2.5 rounded-xl bg-slate-800 active:bg-slate-700 disabled:opacity-40 text-slate-200 text-xs font-bold flex items-center gap-1 border border-slate-700"
+      >
+        <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        <span>Ant.</span>
+      </button>
+
+      <button
+        type="button"
+        onclick="toggleMobileMapDrawer(true)"
+        class="flex-1 py-2.5 px-3 rounded-xl bg-slate-950 border border-teal-500/40 text-teal-300 text-xs font-bold flex items-center justify-center gap-1.5"
+      >
+        <i data-lucide="grid" class="w-4 h-4"></i>
+        <span id="mobileNavCenterStatus">Caso 1 · P1/15 (Mapa)</span>
+      </button>
+
+      <button
+        type="button"
+        id="btnMobileNext"
+        onclick="goToNextQuestion()"
+        class="px-3.5 py-2.5 rounded-xl bg-teal-600 active:bg-teal-500 disabled:opacity-40 text-white text-xs font-bold flex items-center gap-1 shadow"
+      >
+        <span>Sig.</span>
+        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Modal cajón inferior (Bottom Sheet) con el Mapa de Preguntas para Móvil -->
+  <div
+    id="mobileMapDrawer"
+    class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex flex-col justify-end lg:hidden"
+  >
+    <div class="bg-slate-900 border-t border-teal-500/40 rounded-t-3xl p-4 max-h-[82vh] overflow-y-auto space-y-4 animate-fadeIn">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div>
+          <h3 class="text-sm font-bold text-white">Mapa Rápido de Preguntas</h3>
+          <p id="mobileDrawerSubtitle" class="text-xs text-slate-400">Toca cualquier número para saltar a la pregunta</p>
+        </div>
+        <button
+          type="button"
+          onclick="toggleMobileMapDrawer(false)"
+          class="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-200 text-xs font-bold"
+        >
+          Cerrar ✕
+        </button>
+      </div>
+
+      <div id="mobileQuestionMapContainer" class="space-y-3"></div>
+
+      <div class="pt-2 border-t border-slate-800 flex items-center gap-2">
+        <button
+          type="button"
+          id="btnMobileDrawerFinish"
+          onclick="toggleMobileMapDrawer(false); finishExam();"
+          class="w-full py-3 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-2"
+        >
+          <i data-lucide="award" class="w-4 h-4"></i>
+          <span>Corregir y Finalizar Examen</span>
+        </button>
+        <button
+          type="button"
+          id="btnMobileDrawerExport"
+          onclick="toggleMobileMapDrawer(false); exportExamToPDF();"
+          class="hidden w-full py-3 rounded-xl bg-emerald-600 text-white font-bold text-xs flex items-center justify-center gap-2"
+        >
+          <i data-lucide="download" class="w-4 h-4"></i>
+          <span>Exportar Examen Corregido a PDF</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Oficial Convocatoria 12 Diciembre 2026 -->
+  <div
+    id="examInfoModal"
+    class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
+  >
+    <div class="bg-slate-900 border border-teal-500/40 rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl space-y-4 animate-fadeIn">
       <div class="flex items-center justify-between border-b border-slate-800 pb-3">
         <div class="flex items-center gap-2.5">
           <i data-lucide="calendar" class="w-5 h-5 text-teal-400"></i>
-          <h3 class="text-lg font-bold text-white">
-            Datos Oficiales del Examen (12 Diciembre 2026)
+          <h3 class="text-base sm:text-lg font-bold text-white">
+            Convocatoria Oficial MUE (12 Diciembre 2026)
           </h3>
         </div>
         <button
+          type="button"
           onclick="toggleExamInfoModal(false)"
           class="text-slate-400 hover:text-white text-sm font-bold px-2 py-1"
         >
@@ -516,29 +655,27 @@
       </div>
 
       <div class="space-y-3 text-xs sm:text-sm text-slate-300">
-        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-start gap-3">
-          <i data-lucide="map-pin" class="w-5 h-5 text-teal-400 shrink-0 mt-0.5"></i>
-          <div>
-            <div class="font-bold text-white">Sede y Horario Oficial (Ministerio de Sanidad)</div>
-            <div>Facultad de Derecho e Informática - Universidad Complutense de Madrid (UCM)</div>
-            <div class="text-teal-300 mt-1">
-              Sábado, 12 de diciembre de 2026 · Llamamiento: 10:00 h · Inicio: 11:00 h (90 min)
-            </div>
+        <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
+          <div class="font-bold text-white">📍 Sede y Horario Oficial (Ministerio de Sanidad)</div>
+          <div>Facultad de Derecho e Informática · Universidad Complutense de Madrid (UCM).</div>
+          <div class="text-teal-300 font-semibold pt-1">
+            Sábado, 12 de diciembre de 2026 · Llamamiento: 10:00 h · Inicio: 11:00 h (90 min)
           </div>
         </div>
 
-        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5">
-          <div class="font-bold text-white">Estructura de la Prueba Práctica (RD 610/2024)</div>
-          <p>• <strong>3 Casos Clínicos evaluables</strong> de 15 preguntas cada uno (45 preguntas ordinarias, puntuación máxima 45 puntos) + 1 caso de reserva.</p>
-          <p>• <strong>Baremo:</strong> Correcta +1,00 pto | Incorrecta -0,25 ptos | Blanco 0 ptos.</p>
-          <p>• <strong>Criterio de superación:</strong> Alcanzar al menos <strong>5 puntos en cada uno de los 3 casos clínicos</strong> y un total mínimo de <strong>20 puntos globales</strong>.</p>
+        <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5">
+          <div class="font-bold text-white">📋 Estructura y Regla de la Doble Llave (RD 610/2024)</div>
+          <p>• <strong>3 Casos Clínicos evaluables</strong> de 15 preguntas cada uno (45 preguntas ordinarias, puntuación máxima 45 puntos).</p>
+          <p>• <strong>Baremo:</strong> Correcta +1,00 pto | Incorrecta -0,25 ptos | En blanco 0 ptos.</p>
+          <p>• <strong>Criterio para ser APTO:</strong> Alcanzar al menos <strong>5,00 puntos netos en cada uno de los 3 casos clínicos</strong> y un total mínimo de <strong>20,00 puntos globales</strong>.</p>
         </div>
       </div>
 
       <div class="flex justify-end pt-2">
         <button
+          type="button"
           onclick="toggleExamInfoModal(false)"
-          class="px-5 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-sm font-semibold"
+          class="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs sm:text-sm font-semibold"
         >
           Entendido, volver al simulador
         </button>
@@ -546,15 +683,11 @@
     </div>
   </div>
 
-  <!-- Contenedor oculto para impresión directa de emergencia si el navegador bloquea popups -->
-  <div id="printableStudyGuide" class="hidden"></div>
-
   <script>
     const INITIAL_CASES_POOL = [
       {
         id: "caso-1",
         titulo: "Caso Clínico 1",
-        categoria: "Evaluación Oficial MUE",
         vignette: "Varón de 66 años, fumador activo (40 paquetes-año) con antecedentes de HTA, EPOC moderado y cardiopatía isquémica crónica. Acude al Servicio de Urgencias Hospitalarias (SUH) traído por soporte vital avanzado por dolor torácico retroesternal opresivo de 90 minutos de evolución acompañado de disnea súbita intensa, cortejo vegetativo y palpitaciones. A su llegada a sala de críticos: TA 82/50 mmHg, FC 155 lpm, SatO2 86% basal, FR 30 rpm y crepitantes hasta campos medios. Durante la monitorización y abordaje integral en el box de reanimación, el paciente presenta deterioro hemodinámico, alteraciones electrocardiográficas cambiantes y parada cardiorrespiratoria presenciada.",
         questions: [
           {
@@ -757,7 +890,6 @@
       {
         id: "caso-2",
         titulo: "Caso Clínico 2",
-        categoria: "Evaluación Oficial MUE",
         vignette: "Mujer de 71 años con antecedentes de diabetes mellitus tipo 2, hipertensión arterial, fibrilación auricular en tratamiento anticoagulante e infección urinaria reciente tratada de forma incompleta. Es traída a Urgencias por su familia por presentar desde hace 2 horas dificultad brusca para hablar, desviación de la comisura bucal y debilidad en hemicuerpo derecho, asociando en las últimas 24 horas fiebre de 38,9 °C, vómitos, respiración profunda y deterioro progresivo del nivel de conciencia. En triaje avanzado se objetiva: TA 195/105 mmHg, FC 118 lpm, FR 26 rpm, Glucemia capilar > 500 mg/dL, Tª 38,8 °C y puntuación en la escala de Glasgow de 11 puntos.",
         questions: [
           {
@@ -960,7 +1092,6 @@
       {
         id: "caso-3",
         titulo: "Caso Clínico 3",
-        categoria: "Evaluación Oficial MUE",
         vignette: "Varón de 34 años que sufre precipitación desde un andamio a 6 metros de altura tras una descarga eléctrica accidental mientras trabajaba en una nave industrial con un brasero encendido. A la llegada del equipo de emergencias se encuentra atrapado parcialmente por una viga metálica sobre el miembro inferior derecho y la pelvis. En la valoración inicial: apertura ocular al dolor, emite sonidos incomprensibles y retira al dolor; TA 85/50 mmHg, FC 132 lpm, FR 28 rpm, abolición del murmullo vesicular en hemitórax derecho con timpanismo y deformidad pélvica e inguinal. Es trasladado al Hospital de Referencia.",
         questions: [
           {
@@ -1163,7 +1294,6 @@
       {
         id: "caso-4",
         titulo: "Caso Clínico 4",
-        categoria: "Evaluación Oficial MUE",
         vignette: "Se atienden en el área de observación de Urgencias tres situaciones clínico-quirúrgicas de nivel medio-alto: 1) Un varón cirrótico de 58 años con hematemesis franca, ascitis a tensión, fiebre y encefalopatía; 2) Una gestante de 33 semanas con TA de 175/115 mmHg, cefalea, epigastralgia, plaquetopenia y convulsiones; y 3) Un paciente con dolor abdominal agudo e ictericia obstructiva. Responda a las siguientes 15 cuestiones clínicas razonadas según los protocolos del manual.",
         questions: [
           {
@@ -1378,6 +1508,7 @@
     let timeLeft = 90 * 60;
     let timerInterval = null;
     let isGeneratingAI = false;
+    let isMobileVignetteCollapsed = false;
 
     function formatTime(seconds) {
       const m = Math.floor(seconds / 60);
@@ -1394,13 +1525,61 @@
       return copy;
     }
 
+    function showBannerMessage(msg) {
+      const banner = document.getElementById("aiMessageBanner");
+      const textEl = document.getElementById("aiMessageText");
+      if (banner && textEl) {
+        textEl.textContent = msg;
+        banner.classList.remove("hidden");
+      }
+    }
+
+    function updateTimerUI() {
+      const timerDisplay = document.getElementById("timerDisplay");
+      const timerContainer = document.getElementById("timerContainer");
+      const timerPausedBadge = document.getElementById("timerPausedBadge");
+      const timerDisplayMobile = document.getElementById("timerDisplayMobile");
+      const timerContainerMobile = document.getElementById("timerContainerMobile");
+
+      const formatted = formatTime(timeLeft);
+      if (timerDisplay) timerDisplay.textContent = formatted;
+      if (timerDisplayMobile) timerDisplayMobile.textContent = formatted;
+
+      if (!examStarted) {
+        if (timerContainer) {
+          timerContainer.className = "hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border font-mono text-sm font-bold bg-slate-900/60 border-slate-800 text-slate-500 shrink-0";
+        }
+        if (timerContainerMobile) {
+          timerContainerMobile.className = "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border font-mono text-xs font-bold bg-slate-900/60 border-slate-800 text-slate-400";
+        }
+        if (timerPausedBadge) timerPausedBadge.classList.remove("hidden");
+      } else {
+        if (timerPausedBadge) timerPausedBadge.classList.add("hidden");
+        if (timeLeft < 600) {
+          if (timerContainer) {
+            timerContainer.className = "hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border font-mono text-sm font-bold bg-rose-950/80 border-rose-500/50 text-rose-300 animate-pulse shrink-0";
+          }
+          if (timerContainerMobile) {
+            timerContainerMobile.className = "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border font-mono text-xs font-bold bg-rose-950/80 border-rose-500/50 text-rose-300 animate-pulse";
+          }
+        } else {
+          if (timerContainer) {
+            timerContainer.className = "hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl border font-mono text-sm font-bold bg-slate-900 border-slate-700 text-teal-300 shrink-0";
+          }
+          if (timerContainerMobile) {
+            timerContainerMobile.className = "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border font-mono text-xs font-bold bg-slate-900 border-slate-700 text-teal-300";
+          }
+        }
+      }
+    }
+
     function startTimerLoop() {
       if (timerInterval) clearInterval(timerInterval);
       timerInterval = setInterval(() => {
-        if (!examStarted || examFinished || activeExamCases.length === 0) return;
+        if (!examStarted || examFinished) return;
         if (timeLeft <= 1) {
           timeLeft = 0;
-          clearInterval(timerInterval);
+          updateTimerUI();
           finishExam();
         } else {
           timeLeft--;
@@ -1409,24 +1588,32 @@
       }, 1000);
     }
 
-    function updateTimerUI() {
-      const timerDisplay = document.getElementById("timerDisplay");
-      const timerContainer = document.getElementById("timerContainer");
-      const timerPausedBadge = document.getElementById("timerPausedBadge");
-
-      timerDisplay.textContent = formatTime(timeLeft);
-
-      if (!examStarted) {
-        timerContainer.className = "flex items-center gap-2 px-3 py-1.5 rounded-xl border font-mono text-sm font-bold bg-slate-900/60 border-slate-800 text-slate-500";
-        timerPausedBadge.classList.remove("hidden");
+    function toggleMobileVignette() {
+      isMobileVignetteCollapsed = !isMobileVignetteCollapsed;
+      const wrapper = document.getElementById("activeCaseVignetteWrapper");
+      const btnText = document.getElementById("btnToggleVignetteText");
+      if (!wrapper || !btnText) return;
+      if (isMobileVignetteCollapsed) {
+        wrapper.classList.add("hidden");
+        btnText.textContent = "Mostrar enunciado";
       } else {
-        timerPausedBadge.classList.add("hidden");
-        if (timeLeft < 600) {
-          timerContainer.className = "flex items-center gap-2 px-3 py-1.5 rounded-xl border font-mono text-sm font-bold bg-rose-950/80 border-rose-500/50 text-rose-300 animate-pulse";
-        } else {
-          timerContainer.className = "flex items-center gap-2 px-3 py-1.5 rounded-xl border font-mono text-sm font-bold bg-slate-900 border-slate-700 text-teal-300";
-        }
+        wrapper.classList.remove("hidden");
+        btnText.textContent = "Ocultar enunciado";
       }
+    }
+
+    function toggleMobileMapDrawer(show) {
+      const drawer = document.getElementById("mobileMapDrawer");
+      if (!drawer) return;
+      if (show) drawer.classList.remove("hidden");
+      else drawer.classList.add("hidden");
+    }
+
+    function toggleExamInfoModal(show) {
+      const modal = document.getElementById("examInfoModal");
+      if (!modal) return;
+      if (show) modal.classList.remove("hidden");
+      else modal.classList.add("hidden");
     }
 
     function setNumCasesToGenerate(count) {
@@ -1449,34 +1636,49 @@
       const welcomeTimeBadge = document.getElementById("welcomeTimeBadge");
 
       if (numCasesToGenerate === 1) {
-        btn1.className = "px-2.5 py-1.5 rounded-lg font-semibold transition-all bg-amber-500 text-slate-950 shadow";
-        btn3.className = "px-2.5 py-1.5 rounded-lg font-semibold transition-all text-slate-400 hover:text-slate-200";
-        card1.className = "w-full sm:w-1/2 p-4 rounded-2xl border text-left transition-all bg-amber-500/15 border-amber-400 text-white shadow-lg";
-        card3.className = "w-full sm:w-1/2 p-4 rounded-2xl border text-left transition-all bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700";
-        check1.classList.remove("hidden");
-        check3.classList.add("hidden");
-        headerSubtitle.innerHTML = 'Basado en <span class="text-slate-200 font-medium">Montero Pérez &amp; Jiménez Murillo</span> · 1 Caso Clínico (15 preguntas)';
-        welcomeTimeBadge.textContent = "Listo para comenzar · Tiempo detenido (30:00)";
+        if (btn1) btn1.className = "px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg font-semibold transition-all bg-amber-500 text-slate-950 shadow whitespace-nowrap";
+        if (btn3) btn3.className = "px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg font-semibold transition-all text-slate-400 hover:text-slate-200 whitespace-nowrap";
+        if (card1) card1.className = "w-full p-4 rounded-2xl border text-left transition-all bg-amber-500/15 border-amber-400 text-white shadow-lg";
+        if (card3) card3.className = "w-full p-4 rounded-2xl border text-left transition-all bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700";
+        if (check1) check1.classList.remove("hidden");
+        if (check3) check3.classList.add("hidden");
+        if (headerSubtitle) headerSubtitle.innerHTML = 'Basado en <span class="text-slate-200 font-medium">Montero Pérez &amp; Jiménez Murillo</span> · 1 Caso Clínico (15 preguntas)';
+        if (welcomeTimeBadge) welcomeTimeBadge.textContent = "Listo para comenzar · Tiempo detenido (30:00)";
       } else {
-        btn3.className = "px-2.5 py-1.5 rounded-lg font-semibold transition-all bg-amber-500 text-slate-950 shadow";
-        btn1.className = "px-2.5 py-1.5 rounded-lg font-semibold transition-all text-slate-400 hover:text-slate-200";
-        card3.className = "w-full sm:w-1/2 p-4 rounded-2xl border text-left transition-all bg-teal-500/15 border-teal-400 text-white shadow-lg";
-        card1.className = "w-full sm:w-1/2 p-4 rounded-2xl border text-left transition-all bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700";
-        check3.classList.remove("hidden");
-        check1.classList.add("hidden");
-        headerSubtitle.innerHTML = 'Basado en <span class="text-slate-200 font-medium">Montero Pérez &amp; Jiménez Murillo</span> · 3 Casos Clínicos (45 preguntas)';
-        welcomeTimeBadge.textContent = "Listo para comenzar · Tiempo detenido (90:00)";
+        if (btn3) btn3.className = "px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg font-semibold transition-all bg-amber-500 text-slate-950 shadow whitespace-nowrap";
+        if (btn1) btn1.className = "px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg font-semibold transition-all text-slate-400 hover:text-slate-200 whitespace-nowrap";
+        if (card3) card3.className = "w-full p-4 rounded-2xl border text-left transition-all bg-teal-500/15 border-teal-400 text-white shadow-lg";
+        if (card1) card1.className = "w-full p-4 rounded-2xl border text-left transition-all bg-slate-950/60 border-slate-800 text-slate-400 hover:border-slate-700";
+        if (check3) check3.classList.remove("hidden");
+        if (check1) check1.classList.add("hidden");
+        if (headerSubtitle) headerSubtitle.innerHTML = 'Basado en <span class="text-slate-200 font-medium">Montero Pérez &amp; Jiménez Murillo</span> · 3 Casos Clínicos (45 preguntas)';
+        if (welcomeTimeBadge) welcomeTimeBadge.textContent = "Listo para comenzar · Tiempo detenido (90:00)";
       }
 
       const labelCount = numCasesToGenerate === 1 ? "1 Caso · 15 preg." : "3 Casos · 45 preg.";
       const shortCount = numCasesToGenerate === 1 ? "15 preg." : "45 preg.";
 
-      document.getElementById("btnStartRandomTopText").textContent = examStarted
-        ? `Generar Nuevo Examen (${labelCount})`
-        : `Generar Examen del PDF (${labelCount})`;
-      document.getElementById("btnGenerateAITopText").textContent = `Generar con IA (${shortCount})`;
-      document.getElementById("btnWelcomeStartPDF").textContent = `Generar Examen del PDF (${shortCount})`;
-      document.getElementById("btnWelcomeStartAIText").textContent = `Generar Caso Nuevo con IA (${shortCount})`;
+      const btnStartTopText = document.getElementById("btnStartRandomTopText");
+      if (btnStartTopText) {
+        btnStartTopText.textContent = examStarted
+          ? `Generar Nuevo Examen (${labelCount})`
+          : `Generar Examen del PDF (${labelCount})`;
+      }
+
+      const btnGenAITopText = document.getElementById("btnGenerateAITopText");
+      if (btnGenAITopText && !isGeneratingAI) {
+        btnGenAITopText.textContent = `Generar con IA (${shortCount})`;
+      }
+
+      const btnWelcomePDF = document.getElementById("btnWelcomeStartPDF");
+      if (btnWelcomePDF) {
+        btnWelcomePDF.textContent = `Generar Examen del PDF (${shortCount})`;
+      }
+
+      const btnWelcomeAIText = document.getElementById("btnWelcomeStartAIText");
+      if (btnWelcomeAIText && !isGeneratingAI) {
+        btnWelcomeAIText.textContent = `Generar Caso Nuevo con IA (${shortCount})`;
+      }
     }
 
     function setExamMode(mode) {
@@ -1485,11 +1687,11 @@
       const btnSim = document.getElementById("btnModeSimulacro");
 
       if (mode === "aprendizaje") {
-        btnApr.className = "px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1.5 bg-teal-600 text-white shadow";
-        btnSim.className = "px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1.5 text-slate-400 hover:text-slate-200";
+        if (btnApr) btnApr.className = "px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg font-medium transition-all flex items-center gap-1 bg-teal-600 text-white shadow whitespace-nowrap";
+        if (btnSim) btnSim.className = "px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg font-medium transition-all flex items-center gap-1 text-slate-400 hover:text-slate-200 whitespace-nowrap";
       } else {
-        btnSim.className = "px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1.5 bg-indigo-600 text-white shadow";
-        btnApr.className = "px-3 py-1.5 rounded-lg font-medium transition-all flex items-center gap-1.5 text-slate-400 hover:text-slate-200";
+        if (btnSim) btnSim.className = "px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg font-medium transition-all flex items-center gap-1 bg-indigo-600 text-white shadow whitespace-nowrap";
+        if (btnApr) btnApr.className = "px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg font-medium transition-all flex items-center gap-1 text-slate-400 hover:text-slate-200 whitespace-nowrap";
       }
 
       if (examStarted) {
@@ -1497,63 +1699,58 @@
       }
     }
 
-    function toggleExamInfoModal(show) {
-      const modal = document.getElementById("examInfoModal");
-      if (show) modal.classList.remove("hidden");
-      else modal.classList.add("hidden");
-    }
-
     function startNewRandomExam() {
-      const selected = shuffleArray(casesPool).slice(0, numCasesToGenerate).map((caso, idx) => ({
+      const selectedCases = shuffleArray(casesPool).slice(0, numCasesToGenerate).map((caso, idx) => ({
         ...caso,
-        id: `${caso.id}-${Date.now()}-${idx}`,
         numeroCasoExamen: idx + 1,
         tituloNeutro: `Caso Clínico ${idx + 1}`,
         questions: shuffleArray(caso.questions).slice(0, 15)
       }));
 
-      activeExamCases = selected;
+      activeExamCases = selectedCases;
       currentCaseIndex = 0;
       currentQuestionIndex = 0;
       userAnswers = {};
       flaggedQuestions = {};
-      timeLeft = numCasesToGenerate === 1 ? 30 * 60 : 90 * 60;
-      examFinished = false;
       examStarted = true;
+      examFinished = false;
+      timeLeft = numCasesToGenerate === 1 ? 30 * 60 : 90 * 60;
 
       document.getElementById("welcomeScreen").classList.add("hidden");
       document.getElementById("examWorkspace").classList.remove("hidden");
+      document.getElementById("aiMessageBanner").classList.add("hidden");
 
       updateFormatButtonsUI();
       updateTimerUI();
       startTimerLoop();
       renderExamWorkspace();
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     async function generateNewAICase() {
       if (isGeneratingAI) return;
       isGeneratingAI = true;
 
-      const btnTopText = document.getElementById("btnGenerateAITopText");
-      const btnWelText = document.getElementById("btnWelcomeStartAIText");
-      const prevTop = btnTopText.textContent;
-      const prevWel = btnWelText.textContent;
-      btnTopText.textContent = "Generando Caso...";
-      btnWelText.textContent = "Generando Caso Clínico con IA...";
+      const topicSelect = document.getElementById("aiTopicSelect");
+      const selectedTopic = topicSelect ? topicSelect.value : "Aleatorio de todo el libro (Sin pistas)";
 
-      const aiTopic = document.getElementById("aiTopicSelect").value;
+      const btnTopText = document.getElementById("btnGenerateAITopText");
+      const btnWelcomeText = document.getElementById("btnWelcomeStartAIText");
+      if (btnTopText) btnTopText.textContent = "Generando Caso...";
+      if (btnWelcomeText) btnWelcomeText.textContent = "Generando Caso Clínico con IA...";
+
       const apiKey = "";
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
 
       const systemPrompt = `Eres Catedrático y Jefe de Servicio de Medicina de Urgencias y Emergencias en España, coautor del tratado "Medicina de Urgencias y Emergencias a Examen (Montero Pérez y Jiménez Murillo, Elsevier)" y miembro del Tribunal Calificador de la prueba práctica del 12 de diciembre para el acceso extraordinario al título de Especialista en Medicina de Urgencias y Emergencias (RD 610/2024).
-Debes generar 1 CASO CLÍNICO COMPLETO de nivel MEDIO-ALTO con exactamente 15 PREGUNTAS encadenadas o relacionadas con el manejo integral en urgencias sobre el bloque temático solicitado.
-IMPORTANTE: En la viñeta clínica (vignette) describe únicamente la presentación clínica del paciente (edad, antecedentes, síntomas, signos vitales y hallazgos) SIN revelar el diagnóstico en el título para no dar pistas al opositor.
+Debes generar 1 CASO CLÍNICO COMPLETO de nivel MEDIO-ALTO con exactamente 15 PREGUNTAS encadenadas sobre el bloque temático solicitado.
+IMPORTANTE: En la viñeta clínica (vignette) describe únicamente la presentación clínica del paciente SIN revelar el diagnóstico en el título para no dar pistas al opositor.
 Cada pregunta debe tener:
-- 4 opciones de respuesta (solo 1 correcta).
-- Una explicación médica rigurosa basada en los protocolos de Jiménez Murillo / Montero Pérez explicando por qué la respuesta es correcta y por qué las otras son falsas.
-- Un TRUCO MNEMOTÉCNICO formato fórmula ("ESTO + ESTO = ESTO") muy visual y directo para que el médico opositor nunca lo olvide.`;
+- 4 opciones de respuesta (solo 1 correcta, índice 0 a 3).
+- Una explicación médica rigurosa basada en los protocolos de Jiménez Murillo / Montero Pérez.
+- Un TRUCO MNEMOTÉCNICO formato fórmula ("ESTO + ESTO = ESTO") muy visual y directo.`;
 
-      const userQuery = `Genera un nuevo Caso Clínico inédito de nivel medio-alto con 15 preguntas tipo test (4 opciones por pregunta, índice correcta de 0 a 3) basado en el bloque: "${aiTopic}" del libro Medicina de Urgencias y Emergencias a Examen de Montero Pérez y Jiménez Murillo. Devuelve estrictamente el JSON con la estructura indicada.`;
+      const userQuery = `Genera un nuevo Caso Clínico inédito de nivel medio-alto con 15 preguntas tipo test (4 opciones por pregunta, índice correcta de 0 a 3) basado en el bloque: "${selectedTopic}" del libro Medicina de Urgencias y Emergencias a Examen de Montero Pérez y Jiménez Murillo. Devuelve estrictamente JSON.`;
 
       const payload = {
         contents: [{ parts: [{ text: userQuery }] }],
@@ -1563,8 +1760,6 @@ Cada pregunta debe tener:
           responseSchema: {
             type: "OBJECT",
             properties: {
-              titulo: { type: "STRING" },
-              categoria: { type: "STRING" },
               vignette: { type: "STRING" },
               questions: {
                 type: "ARRAY",
@@ -1581,18 +1776,21 @@ Cada pregunta debe tener:
                 }
               }
             },
-            required: ["titulo", "categoria", "vignette", "questions"]
+            required: ["vignette", "questions"]
           }
         }
       };
 
       try {
+        if (!apiKey) {
+          throw new Error("Modo local activo");
+        }
         const res = await fetch(apiUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
-        if (!res.ok) throw new Error("Error HTTP");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const result = await res.json();
         const rawJson = result?.candidates?.[0]?.content?.parts?.[0]?.text;
         const parsedCase = JSON.parse(rawJson);
@@ -1600,12 +1798,11 @@ Cada pregunta debe tener:
         const formattedCase = {
           id: `caso-ai-${Date.now()}`,
           titulo: "Caso Clínico 1",
-          categoria: "Evaluación Oficial MUE",
           vignette: parsedCase.vignette,
           questions: (parsedCase.questions || []).slice(0, 15).map((q, idx) => ({
             id: `ai-${Date.now()}-q${idx}`,
             pregunta: q.pregunta,
-            opciones: q.opciones?.slice(0, 4) || ["Opción A", "Opción B", "Opción C", "Opción D"],
+            opciones: (q.opciones || []).slice(0, 4),
             correcta: typeof q.correcta === "number" && q.correcta >= 0 && q.correcta <= 3 ? q.correcta : 0,
             explicacion: q.explicacion,
             truco: q.truco
@@ -1613,11 +1810,11 @@ Cada pregunta debe tener:
         };
 
         casesPool = [formattedCase, ...casesPool];
-        const examList = numCasesToGenerate === 1
+        const listToUse = numCasesToGenerate === 1
           ? [formattedCase]
           : [formattedCase, ...shuffleArray(INITIAL_CASES_POOL).slice(0, 2)];
 
-        activeExamCases = examList.map((c, idx) => ({
+        activeExamCases = listToUse.map((c, idx) => ({
           ...c,
           numeroCasoExamen: idx + 1,
           tituloNeutro: `Caso Clínico ${idx + 1}`
@@ -1627,9 +1824,9 @@ Cada pregunta debe tener:
         currentQuestionIndex = 0;
         userAnswers = {};
         flaggedQuestions = {};
-        timeLeft = numCasesToGenerate === 1 ? 30 * 60 : 90 * 60;
-        examFinished = false;
         examStarted = true;
+        examFinished = false;
+        timeLeft = numCasesToGenerate === 1 ? 30 * 60 : 90 * 60;
 
         document.getElementById("welcomeScreen").classList.add("hidden");
         document.getElementById("examWorkspace").classList.remove("hidden");
@@ -1637,12 +1834,9 @@ Cada pregunta debe tener:
         startTimerLoop();
         renderExamWorkspace();
       } catch (err) {
-        // Si se ejecuta en local sin clave API externa, cargamos automáticamente una combinación aleatoria de alta dificultad del PDF
-        const banner = document.getElementById("aiMessageBanner");
-        const text = document.getElementById("aiMessageText");
-        text.textContent = "Se ha generado un examen clínico barajando el banco oficial del PDF de Montero Pérez & Jiménez Murillo.";
-        banner.classList.remove("hidden");
+        // Fallback inmediato barajando casos de alta dificultad del propio PDF para que siempre funcione en cualquier entorno
         startNewRandomExam();
+        showBannerMessage("Se ha generado una combinación aleatoria de alta dificultad directamente del banco oficial del PDF de Montero Pérez y Jiménez Murillo.");
       } finally {
         isGeneratingAI = false;
         updateFormatButtonsUI();
@@ -1689,7 +1883,6 @@ Cada pregunta debe tener:
           incorrect: cIncorrect,
           blank: cBlank,
           score: finalCaseScore,
-          rawScore: Number(rawCaseScore.toFixed(2)),
           passed: passedCase
         };
       });
@@ -1709,16 +1902,8 @@ Cada pregunta debe tener:
         maxPossibleScore,
         minGlobalRequired,
         finalGlobalScore,
-        allCasesMinimumMet,
-        globalMinimumMet,
         isApto
       };
-    }
-
-    function finishExam() {
-      examFinished = true;
-      renderExamWorkspace();
-      window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     function renderExamWorkspace() {
@@ -1728,7 +1913,7 @@ Cada pregunta debe tener:
       const totalAnsweredCount = Object.values(userAnswers).filter((v) => v !== null && v !== undefined).length;
       const scoreSummary = calculateScoreSummary();
 
-      // Botones superiores de Corregir y Exportar a PDF
+      // Botones superiores de Corregir y Exportar PDF
       const btnFinishTop = document.getElementById("btnFinishExamTop");
       const btnFinishTopText = document.getElementById("btnFinishExamTopText");
       const btnExportTop = document.getElementById("btnExportPDFTop");
@@ -1742,18 +1927,17 @@ Cada pregunta debe tener:
         btnExportTop.classList.remove("hidden");
       }
 
-      // Panel de Resultados si el examen ha finalizado
+      // Panel de Acta de Resultados si el examen ha finalizado
       const resultsDashboard = document.getElementById("resultsDashboard");
       if (examFinished && scoreSummary) {
         resultsDashboard.classList.remove("hidden");
-
-        const globalAptoBadge = document.getElementById("globalAptoBadge");
+        const aptoBadge = document.getElementById("globalAptoBadge");
         if (scoreSummary.isApto) {
-          globalAptoBadge.className = "px-3.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400 text-emerald-300 text-lg flex items-center gap-1.5";
-          globalAptoBadge.innerHTML = "✓ APTO (Especialista MUE)";
+          aptoBadge.className = "px-3.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-400 text-emerald-300 text-sm sm:text-lg font-bold inline-flex items-center gap-1.5";
+          aptoBadge.textContent = "✓ APTO (Especialista MUE)";
         } else {
-          globalAptoBadge.className = "px-3.5 py-1 rounded-full bg-rose-500/20 border border-rose-400 text-rose-300 text-lg flex items-center gap-1.5";
-          globalAptoBadge.innerHTML = "✗ NO APTO";
+          aptoBadge.className = "px-3.5 py-1 rounded-full bg-rose-500/20 border border-rose-400 text-rose-300 text-sm sm:text-lg font-bold inline-flex items-center gap-1.5";
+          aptoBadge.textContent = "✗ NO APTO";
         }
 
         document.getElementById("resFinalScore").textContent = scoreSummary.finalGlobalScore;
@@ -1764,7 +1948,7 @@ Cada pregunta debe tener:
         document.getElementById("resBlankCount").textContent = `○ En blanco: ${scoreSummary.totalBlank} (0 ptos)`;
 
         const breakdownGrid = document.getElementById("casesBreakdownGrid");
-        breakdownGrid.className = `grid grid-cols-1 ${activeExamCases.length === 1 ? "md:grid-cols-1 max-w-md" : "md:grid-cols-3"} gap-4`;
+        breakdownGrid.className = `grid grid-cols-1 ${activeExamCases.length === 1 ? "md:grid-cols-1 max-w-md" : "md:grid-cols-3"} gap-3 sm:gap-4`;
         breakdownGrid.innerHTML = scoreSummary.caseBreakdown.map((cb, idx) => `
           <div class="p-4 rounded-xl border ${cb.passed ? 'bg-emerald-950/20 border-emerald-500/40' : 'bg-rose-950/20 border-rose-500/40'}">
             <div class="flex items-center justify-between mb-2">
@@ -1774,9 +1958,7 @@ Cada pregunta debe tener:
               </span>
             </div>
             <div class="flex items-baseline justify-between mt-3">
-              <div class="text-xl font-extrabold text-white">
-                ${cb.score} <span class="text-xs font-normal text-slate-400">/ 15 ptos</span>
-              </div>
+              <div class="text-xl font-extrabold text-white">${cb.score} <span class="text-xs font-normal text-slate-400">/ 15 ptos</span></div>
               <div class="text-xs text-slate-400 space-x-2">
                 <span class="text-emerald-400">+${cb.correct}</span>
                 <span class="text-rose-400">-${cb.incorrect}</span>
@@ -1790,7 +1972,7 @@ Cada pregunta debe tener:
         const noAptoWarningText = document.getElementById("noAptoWarningText");
         if (!scoreSummary.isApto) {
           noAptoWarning.classList.remove("hidden");
-          noAptoWarningText.innerHTML = `<strong>Recuerda la regla eliminatoria del 12 de diciembre:</strong> Para superar la prueba es obligatorio obtener <strong>al menos 5,00 puntos netos en cada caso clínico de 15 preguntas</strong> ${activeExamCases.length === 3 ? 'y una puntuación global mínima de 20,00 puntos' : ''}. Puedes pulsar en <strong>"Exportar Examen Corregido a PDF"</strong> arriba a la derecha para guardar todo el examen con sus explicaciones y trucos mnemotécnicos.`;
+          noAptoWarningText.innerHTML = `<strong>Recuerda la regla eliminatoria del 12 de diciembre:</strong> Para superar la prueba es obligatorio obtener <strong>al menos 5,00 puntos netos en cada caso clínico de 15 preguntas</strong> ${activeExamCases.length === 3 ? 'y una puntuación global mínima de 20,00 puntos' : ''}. Pulsa en <strong>"Exportar Examen Corregido a PDF"</strong> para guardar todo el examen con sus explicaciones y trucos.`;
         } else {
           noAptoWarning.classList.add("hidden");
         }
@@ -1798,26 +1980,27 @@ Cada pregunta debe tener:
         resultsDashboard.classList.add("hidden");
       }
 
-      // Pestañas de Caso Clínico (Estrictamente "Caso Clínico X" sin pistas)
+      // Pestañas de Caso Clínico (Estrictamente "Caso Clínico X" sin pistas, compactas en móvil)
       const caseTabsContainer = document.getElementById("caseTabsContainer");
-      caseTabsContainer.className = `grid grid-cols-1 ${activeExamCases.length === 1 ? "md:grid-cols-1" : "md:grid-cols-3"} gap-3`;
+      caseTabsContainer.className = `grid ${activeExamCases.length === 1 ? "grid-cols-1" : "grid-cols-3"} gap-2 sm:gap-3`;
       caseTabsContainer.innerHTML = activeExamCases.map((caso, idx) => {
         const isSelected = idx === currentCaseIndex;
         const answeredInCase = caso.questions.filter((_, qIdx) => userAnswers[`${idx}-${qIdx}`] !== undefined && userAnswers[`${idx}-${qIdx}`] !== null).length;
         return `
           <button
+            type="button"
             onclick="selectCaseTab(${idx})"
-            class="text-left p-4 rounded-2xl border transition-all ${
+            class="text-left p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border transition-all ${
               isSelected
                 ? 'bg-gradient-to-br from-teal-900/60 to-slate-900 border-teal-400 shadow-lg shadow-teal-950/50'
                 : 'bg-slate-900/70 border-slate-800 hover:border-slate-700 text-slate-400'
             }"
           >
-            <div class="flex items-center justify-between gap-2">
-              <span class="text-sm font-bold ${isSelected ? 'text-white' : 'text-slate-300'}">Caso Clínico ${idx + 1}</span>
-              <span class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono">${answeredInCase}/15 resp.</span>
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+              <span class="text-xs sm:text-sm font-bold ${isSelected ? 'text-white' : 'text-slate-300'}">Caso Clínico ${idx + 1}</span>
+              <span class="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-mono w-fit">${answeredInCase}/15</span>
             </div>
-            <div class="text-[11px] text-slate-400 mt-1">Preguntas ${idx * 15 + 1} a ${(idx + 1) * 15}</div>
+            <div class="text-[10px] sm:text-[11px] text-slate-400 mt-1 hidden sm:block">Preguntas ${idx * 15 + 1} a ${(idx + 1) * 15}</div>
           </button>
         `;
       }).join("");
@@ -1832,22 +2015,34 @@ Cada pregunta debe tener:
 
       document.getElementById("activeCaseTitle").textContent = `Caso Clínico ${currentCaseIndex + 1}`;
       document.getElementById("activeCaseVignette").textContent = currentCase.vignette;
-      document.getElementById("activeQuestionBadge").textContent = `Caso Clínico ${currentCaseIndex + 1} · Pregunta ${currentQuestionIndex + 1} de 15`;
+      document.getElementById("activeQuestionBadge").textContent = `Caso ${currentCaseIndex + 1} · Pregunta ${currentQuestionIndex + 1}/15`;
       document.getElementById("activeQuestionGlobalCounter").textContent = `(Global: ${currentCaseIndex * 15 + currentQuestionIndex + 1}/${totalQuestionsInExam})`;
       document.getElementById("activeQuestionStem").textContent = currentQuestion.pregunta;
+
+      // Actualizar barra inferior móvil
+      const mobileBottomNav = document.getElementById("mobileBottomNav");
+      if (mobileBottomNav) {
+        mobileBottomNav.classList.remove("hidden");
+        document.getElementById("mobileNavCenterStatus").textContent = `Caso ${currentCaseIndex + 1} · P${currentQuestionIndex + 1}/15 (${totalAnsweredCount}/${totalQuestionsInExam})`;
+        document.getElementById("btnMobilePrev").disabled = (currentCaseIndex === 0 && currentQuestionIndex === 0);
+        document.getElementById("btnMobileNext").disabled = (
+          currentCaseIndex === activeExamCases.length - 1 &&
+          currentQuestionIndex === currentCase.questions.length - 1
+        );
+      }
 
       // Botón de marcar duda
       const btnFlag = document.getElementById("btnFlagQuestion");
       const btnFlagText = document.getElementById("btnFlagQuestionText");
       if (flaggedQuestions[currentKey]) {
-        btnFlag.className = "px-2.5 py-1 rounded-lg text-xs font-medium flex items-center gap-1.5 border transition bg-amber-500/20 border-amber-400/50 text-amber-300";
+        btnFlag.className = "px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 border transition bg-amber-500/20 border-amber-400/50 text-amber-300 shrink-0";
         btnFlagText.textContent = "Dudosa";
       } else {
-        btnFlag.className = "px-2.5 py-1 rounded-lg text-xs font-medium flex items-center gap-1.5 border transition bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200";
-        btnFlagText.textContent = "Marcar duda";
+        btnFlag.className = "px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 border transition bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200 shrink-0";
+        btnFlagText.textContent = "Duda";
       }
 
-      // Renderizar las 4 opciones
+      // Renderizar las 4 opciones de respuesta
       const letters = ["a", "b", "c", "d"];
       const optionsContainer = document.getElementById("optionsListContainer");
       optionsContainer.innerHTML = currentQuestion.opciones.map((opcion, optIdx) => {
@@ -1856,17 +2051,17 @@ Cada pregunta debe tener:
 
         let optionStyle = "bg-slate-950/80 border-slate-800 hover:border-slate-600 text-slate-200";
         let badgeStyle = "bg-slate-800 text-slate-300 border-slate-700";
-        let rightIcon = "";
+        let iconRight = "";
 
         if (showImmediateFeedback) {
           if (isThisCorrect) {
             optionStyle = "bg-emerald-950/50 border-emerald-500/70 text-emerald-100 ring-1 ring-emerald-500/40";
             badgeStyle = "bg-emerald-500 text-slate-950 font-bold border-emerald-400";
-            rightIcon = `<span class="text-emerald-400 font-bold text-lg shrink-0">✓</span>`;
+            iconRight = '<span class="text-emerald-400 font-bold text-base shrink-0 mt-0.5">✓</span>';
           } else if (isThisSelected && !isThisCorrect) {
             optionStyle = "bg-rose-950/50 border-rose-500/70 text-rose-100 ring-1 ring-rose-500/40";
             badgeStyle = "bg-rose-500 text-white font-bold border-rose-400";
-            rightIcon = `<span class="text-rose-400 font-bold text-lg shrink-0">✗</span>`;
+            iconRight = '<span class="text-rose-400 font-bold text-base shrink-0 mt-0.5">✗</span>';
           } else {
             optionStyle = "bg-slate-950/40 border-slate-800/60 text-slate-500";
           }
@@ -1877,14 +2072,15 @@ Cada pregunta debe tener:
 
         return `
           <button
+            type="button"
             onclick="handleSelectOption(${optIdx})"
-            class="w-full text-left p-4 rounded-xl border transition-all flex items-start gap-3.5 ${optionStyle}"
+            class="w-full text-left p-3.5 sm:p-4 rounded-xl border transition-all flex items-start gap-3 ${optionStyle}"
           >
             <span class="w-7 h-7 rounded-lg border flex items-center justify-center text-xs uppercase shrink-0 mt-0.5 transition ${badgeStyle}">
               ${letters[optIdx]}
             </span>
-            <span class="text-sm sm:text-base flex-1 leading-relaxed">${opcion}</span>
-            ${rightIcon}
+            <span class="text-xs sm:text-base flex-1 leading-relaxed">${opcion}</span>
+            ${iconRight}
           </button>
         `;
       }).join("");
@@ -1898,28 +2094,28 @@ Cada pregunta debe tener:
         if (selectedOption === currentQuestion.correcta) {
           statusBanner.className = "p-3.5 rounded-xl border flex items-center gap-3 bg-emerald-950/40 border-emerald-500/40 text-emerald-200";
           statusBanner.innerHTML = `
-            <span class="text-2xl text-emerald-400 font-bold">✓</span>
+            <span class="text-xl font-bold text-emerald-400">✓</span>
             <div>
-              <div class="text-sm font-bold">¡Respuesta Correcta! (+1,00 punto)</div>
-              <div class="text-xs opacity-90">Excelente razonamiento clínico. Repasa la regla mnemotécnica para consolidar.</div>
+              <div class="text-xs sm:text-sm font-bold">¡Respuesta Correcta! (+1,00 punto)</div>
+              <div class="text-[11px] sm:text-xs opacity-90">Excelente razonamiento clínico. Repasa la fórmula mnemotécnica para consolidar.</div>
             </div>
           `;
         } else if (selectedOption === undefined || selectedOption === null) {
           statusBanner.className = "p-3.5 rounded-xl border flex items-center gap-3 bg-slate-800/60 border-slate-700 text-slate-300";
           statusBanner.innerHTML = `
-            <span class="text-2xl text-slate-400 font-bold">○</span>
+            <span class="text-xl font-bold text-slate-400">○</span>
             <div>
-              <div class="text-sm font-bold">Pregunta en Blanco (0 puntos)</div>
-              <div class="text-xs opacity-90">La respuesta correcta era la opción <strong class="uppercase">${letters[currentQuestion.correcta]}</strong>.</div>
+              <div class="text-xs sm:text-sm font-bold">Pregunta en Blanco (0 puntos)</div>
+              <div class="text-[11px] sm:text-xs opacity-90">La respuesta correcta era la opción <strong class="uppercase text-emerald-300">${letters[currentQuestion.correcta]}</strong>.</div>
             </div>
           `;
         } else {
           statusBanner.className = "p-3.5 rounded-xl border flex items-center gap-3 bg-rose-950/40 border-rose-500/40 text-rose-200";
           statusBanner.innerHTML = `
-            <span class="text-2xl text-rose-400 font-bold">✗</span>
+            <span class="text-xl font-bold text-rose-400">✗</span>
             <div>
-              <div class="text-sm font-bold">Respuesta Incorrecta (-0,25 puntos de penalización)</div>
-              <div class="text-xs opacity-90">Marcaste la opción <strong class="uppercase">${letters[selectedOption]}</strong>, pero la respuesta correcta es la <strong class="uppercase text-emerald-300">${letters[currentQuestion.correcta]}</strong>. Lee atentamente el porqué y el truco de memoria:</div>
+              <div class="text-xs sm:text-sm font-bold">Respuesta Incorrecta (-0,25 puntos de penalización)</div>
+              <div class="text-[11px] sm:text-xs opacity-90">Marcaste la opción <strong class="uppercase">${letters[selectedOption]}</strong>, pero la correcta es la <strong class="uppercase text-emerald-300">${letters[currentQuestion.correcta]}</strong>.</div>
             </div>
           `;
         }
@@ -1930,7 +2126,7 @@ Cada pregunta debe tener:
         feedbackContainer.classList.add("hidden");
       }
 
-      // Controles de navegación Anterior / Siguiente / Dejar en blanco
+      // Botones de navegación Anterior / Siguiente / Limpiar
       document.getElementById("btnPrevQuestion").disabled = (currentCaseIndex === 0 && currentQuestionIndex === 0);
       document.getElementById("btnNextQuestion").disabled = (
         currentCaseIndex === activeExamCases.length - 1 &&
@@ -1944,12 +2140,12 @@ Cada pregunta debe tener:
         btnClear.classList.add("hidden");
       }
 
-      // Mapa del Examen en la columna derecha
+      // Mapa de preguntas lateral y móvil
       document.getElementById("mapHeaderTitle").textContent = `Mapa del Examen (${totalQuestionsInExam} Preguntas)`;
       document.getElementById("mapHeaderCounter").textContent = `${totalAnsweredCount}/${totalQuestionsInExam} contestadas`;
 
       const mapContainer = document.getElementById("questionMapContainer");
-      mapContainer.innerHTML = activeExamCases.map((caso, cIdx) => {
+      const mapHtml = activeExamCases.map((caso, cIdx) => {
         const cbItem = scoreSummary?.caseBreakdown?.[cIdx];
         const scoreBadgeHtml = ((examMode === "aprendizaje" || examFinished) && cbItem)
           ? `<span class="text-[11px] font-bold px-2 py-0.5 rounded ${cbItem.score >= 5 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-slate-800 text-slate-400'}">Neto: ${cbItem.score} / 15 ptos</span>`
@@ -1974,8 +2170,9 @@ Cada pregunta debe tener:
 
           return `
             <button
+              type="button"
               onclick="jumpToQuestion(${cIdx}, ${qIdx})"
-              class="h-8 rounded-lg border text-xs font-mono relative flex items-center justify-center transition ${btnColor} ${isCurrent ? 'ring-2 ring-white scale-105 z-10' : ''}"
+              class="h-9 sm:h-8 rounded-lg border text-xs font-mono relative flex items-center justify-center transition ${btnColor} ${isCurrent ? 'ring-2 ring-white scale-105 z-10' : ''}"
             >
               ${qIdx + 1}
               ${isFlagged ? '<span class="w-2 h-2 rounded-full bg-amber-400 absolute -top-0.5 -right-0.5"></span>' : ''}
@@ -1995,13 +2192,30 @@ Cada pregunta debe tener:
           </div>
         `;
       }).join("");
+
+      mapContainer.innerHTML = mapHtml;
+
+      // Sincronizar también el cajón del mapa móvil
+      const mobileMapContainer = document.getElementById("mobileQuestionMapContainer");
+      if (mobileMapContainer) {
+        mobileMapContainer.innerHTML = mapHtml;
+        const btnDrawerFinish = document.getElementById("btnMobileDrawerFinish");
+        const btnDrawerExport = document.getElementById("btnMobileDrawerExport");
+        if (examFinished) {
+          btnDrawerFinish.classList.add("hidden");
+          btnDrawerExport.classList.remove("hidden");
+        } else {
+          btnDrawerFinish.classList.remove("hidden");
+          btnDrawerExport.classList.add("hidden");
+        }
+      }
     }
 
     function handleSelectOption(optIndex) {
       if (examFinished) return;
       const currentKey = `${currentCaseIndex}-${currentQuestionIndex}`;
-      const isAnswered = userAnswers[currentKey] !== undefined && userAnswers[currentKey] !== null;
-      if (examMode === "aprendizaje" && isAnswered) return;
+      const isAlreadyAnswered = userAnswers[currentKey] !== undefined && userAnswers[currentKey] !== null;
+      if (examMode === "aprendizaje" && isAlreadyAnswered) return;
 
       if (userAnswers[currentKey] === optIndex) {
         userAnswers[currentKey] = null;
@@ -2032,29 +2246,39 @@ Cada pregunta debe tener:
     function jumpToQuestion(cIdx, qIdx) {
       currentCaseIndex = cIdx;
       currentQuestionIndex = qIdx;
+      toggleMobileMapDrawer(false);
       renderExamWorkspace();
     }
 
     function goToNextQuestion() {
+      if (!activeExamCases.length) return;
       const currentCase = activeExamCases[currentCaseIndex];
-      if (!currentCase) return;
       if (currentQuestionIndex < currentCase.questions.length - 1) {
         currentQuestionIndex++;
+        renderExamWorkspace();
       } else if (currentCaseIndex < activeExamCases.length - 1) {
         currentCaseIndex++;
         currentQuestionIndex = 0;
+        renderExamWorkspace();
       }
-      renderExamWorkspace();
     }
 
     function goToPrevQuestion() {
+      if (!activeExamCases.length) return;
       if (currentQuestionIndex > 0) {
         currentQuestionIndex--;
+        renderExamWorkspace();
       } else if (currentCaseIndex > 0) {
         currentCaseIndex--;
         currentQuestionIndex = activeExamCases[currentCaseIndex].questions.length - 1;
+        renderExamWorkspace();
       }
+    }
+
+    function finishExam() {
+      examFinished = true;
       renderExamWorkspace();
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     function exportExamToPDF() {
@@ -2123,10 +2347,8 @@ Cada pregunta debe tener:
         return `
           <div class="case-section">
             <div class="case-banner">
-              <div>
-                <h2>Caso Clínico ${cIdx + 1}</h2>
-                <div class="case-sub">Nota del Caso: <strong>${cb.score} / 15 puntos</strong> (Aciertos: ${cb.correct} | Fallos: ${cb.incorrect} | Blanco: ${cb.blank}) — <strong>${cb.passed ? "SUPERADO (≥ 5 ptos)" : "NO SUPERADO (< 5 ptos)"}</strong></div>
-              </div>
+              <h2>Caso Clínico ${cIdx + 1}</h2>
+              <div class="case-sub">Nota del Caso: <strong>${cb.score} / 15 puntos</strong> (Aciertos: ${cb.correct} | Fallos: ${cb.incorrect} | Blanco: ${cb.blank}) — <strong>${cb.passed ? "SUPERADO (≥ 5 ptos)" : "NO SUPERADO (< 5 ptos)"}</strong></div>
             </div>
             <div class="vignette-box">
               <strong>Exposición del Caso Clínico ${cIdx + 1}:</strong><br/>
@@ -2152,7 +2374,7 @@ Cada pregunta debe tener:
               line-height: 1.5;
               font-size: 11pt;
               margin: 0;
-              padding: 0;
+              padding: 12px;
             }
             .top-bar {
               background: #0f172a;
@@ -2163,9 +2385,10 @@ Cada pregunta debe tener:
               display: flex;
               justify-content: space-between;
               align-items: center;
+              gap: 12px;
             }
-            .top-bar h1 { margin: 0; font-size: 16pt; color: #2dd4bf; }
-            .top-bar p { margin: 3px 0 0 0; font-size: 9.5pt; color: #cbd5e1; }
+            .top-bar h1 { margin: 0; font-size: 15pt; color: #2dd4bf; }
+            .top-bar p { margin: 3px 0 0 0; font-size: 9pt; color: #cbd5e1; }
             .print-btn {
               background: #0d9488;
               color: #fff;
@@ -2335,13 +2558,51 @@ Cada pregunta debe tener:
       }
     }
 
-    // Inicializar iconos Lucide al cargar la página
+    // Exponer explícitamente todas las funciones al ámbito global window para evitar cualquier ReferenceError
+    window.setNumCasesToGenerate = setNumCasesToGenerate;
+    window.setExamMode = setExamMode;
+    window.startNewRandomExam = startNewRandomExam;
+    window.generateNewAICase = generateNewAICase;
+    window.finishExam = finishExam;
+    window.exportExamToPDF = exportExamToPDF;
+    window.toggleMobileVignette = toggleMobileVignette;
+    window.toggleMobileMapDrawer = toggleMobileMapDrawer;
+    window.toggleExamInfoModal = toggleExamInfoModal;
+    window.handleSelectOption = handleSelectOption;
+    window.clearCurrentAnswer = clearCurrentAnswer;
+    window.toggleFlagQuestion = toggleFlagQuestion;
+    window.selectCaseTab = selectCaseTab;
+    window.jumpToQuestion = jumpToQuestion;
+    window.goToNextQuestion = goToNextQuestion;
+    window.goToPrevQuestion = goToPrevQuestion;
+
+    // Inicializar iconos Lucide y gestos táctiles (swipe) en móvil al cargar la página
     window.addEventListener("DOMContentLoaded", () => {
       if (window.lucide) {
         window.lucide.createIcons();
       }
       updateFormatButtonsUI();
       updateTimerUI();
+
+      // Soporte de gesto Swipe izquierda/derecha sobre la tarjeta de pregunta en móvil
+      const touchCard = document.getElementById("questionCardTouchArea");
+      let touchStartX = 0;
+      let touchStartY = 0;
+      if (touchCard) {
+        touchCard.addEventListener("touchstart", (e) => {
+          touchStartX = e.changedTouches[0].screenX;
+          touchStartY = e.changedTouches[0].screenY;
+        }, { passive: true });
+
+        touchCard.addEventListener("touchend", (e) => {
+          const deltaX = e.changedTouches[0].screenX - touchStartX;
+          const deltaY = e.changedTouches[0].screenY - touchStartY;
+          if (Math.abs(deltaX) > 65 && Math.abs(deltaX) > Math.abs(deltaY) * 1.8) {
+            if (deltaX < 0) goToNextQuestion();
+            else goToPrevQuestion();
+          }
+        }, { passive: true });
+      }
     });
   </script>
 </body>
